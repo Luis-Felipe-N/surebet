@@ -8,11 +8,21 @@ export interface Bet {
 }
 
 export interface Odd {
-    caption: "TOTALCHUTESAOGOL" | "TOTALCHUTES" | "TOTALDESARMES"
+    caption: string
     bets: [
         { type: 'OVER', items: Bet[] },
         { type: 'UNDER', items: Bet[] }
     ]
 }
 
-export type OddStake = Odd[]
+export type OddStake = {
+    stake: string
+    odds: Odd[]
+}
+
+export interface Surebet {
+    type: string,
+    winningPercentage: number,
+    stake1: Odd,
+    stake2: Odd
+}
