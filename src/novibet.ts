@@ -1,8 +1,8 @@
 import axios from 'axios'
-import { Bet, Odd } from './types'
+import { Bet, Odd, OddStake } from './types'
 
-export async function getOddsNovibet(URL: string) {
-
+export async function getOddsNovibet(URL: string): Promise<OddStake> {
+    console.log(URL)
     const response = await axios.get(URL)
     const items = response.data.marketCategories[0].items
     const odds: Odd[] = []
@@ -28,6 +28,27 @@ export async function getOddsNovibet(URL: string) {
                     categoryTitle = "TOTALDESARMES"
                     break;
 
+                case "SOCCER_PLAYER_SHOTSONTARGET_OVERLINE":
+                    categoryIsValid = true
+                    categoryTitle = "TOTALCHUTESAOGOL"
+                    break;
+                case "SOCCER_PLAYER_SHOTS_OVERLINE":
+                    categoryIsValid = true
+                    categoryTitle = "TOTALCHUTES"
+                    break;
+                case "SOCCER_PLAYER_TACKLES_OVERLINE":
+                    categoryIsValid = true
+                    categoryTitle = "TOTALDESARMES"
+                    break;
+
+                case "SOCCER_PLAYER_ASSISTS_OVERLINE_EXTENDED":
+                    categoryIsValid = true
+                    categoryTitle = "TOTALDEASSISTENCIAS"
+                    break;
+                case "PLAYER_GOALKEEPER_SAVES_OVERUNDER_NEW":
+                    categoryIsValid = true
+                    categoryTitle = "DEFESASDOGOLEIRO"
+                    break;
                 default:
                     break;
             }
@@ -37,14 +58,33 @@ export async function getOddsNovibet(URL: string) {
             for (const item of category.betViews) {
                 for (const betItem of item.betItems) {
                     if (betItem?.caption) {
-                        const parts = betItem.caption.split(/\s+(Mais|Menos) de/);
+                        let parts = betItem.caption.split(/(Mais|Menos) de/);
+                        let line: number;
+                        let player: string;
+                        let code = betItem.code
+
+                        if (parts.length > 1) {
+                            player = !!parts[0] ? parts[0] : item.caption.split('-')[0]
+                            line = parseFloat(parts[2].trim().replace(',', '.'))
+                        } else {
+                            let parts = betItem.caption.split(/\s+(\+|\-)/)[0]
+                            player = item.caption.split('-')[0]
+                            line = parseFloat(parts[0].trim().replace(',', '.'))
+
+                            if (parts[1] == "+") {
+                                code = "O"
+                            } else {
+                                code = "U"
+                            }
+                        }
 
                         const bet = {
-                            caption: betItem.caption.trim(),
+                            stake: "NOVIBET",
+                            player: player.trim(),
                             price: betItem.price,
-                            code: betItem.code,
-                            player: parts[0],
-                            line: parseFloat(parts[2].trim().replace(',', '.'))
+                            line: line,
+                            caption: betItem.caption.trim(),
+                            code: code,
                         }
 
                         bets.push(bet)
@@ -66,7 +106,7 @@ export async function getOddsNovibet(URL: string) {
                 }
             }
 
-            const odd = {
+            const odd: Odd = {
                 caption: categoryTitle,
                 bets: [
                     {

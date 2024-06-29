@@ -1,12 +1,12 @@
 import chalk from 'chalk'
-import { Odd, OddStake } from './types';
+import stringSimilarity from 'string-similarity';
+import { Odd, OddStake, Surebet } from './types';
+
 
 export class SurebetCalculator {
-    constructor(odds: OddStake[], config) {
-        this.odds = odds;
-        this.surebets = [];
-        this.config = config;
-    }
+
+    constructor(private odds: OddStake[]) { }
+    public surebets: Surebet[] = []
 
     extract() {
         if (!this.odds) throw 'No odds received.';
@@ -27,28 +27,29 @@ export class SurebetCalculator {
                 const otherType = category.bets.filter(item => item.type != type)[0]
 
                 bets.items.forEach(bet => {
-                    const otherStake = otherType.items.filter(item => item.stake != bet.stake)[0]
                     for (const odd of bet.odds) {
-                        const player = this.normalize(odd.player)
+                        otherType.items.filter(item => {
 
-                        const [oddOtherTypeAndStake] = otherStake.odds.filter(item => this.normalize(item.player) == player)
+                            if (item.stake != bet.stake) {
+                                const oddsOtherTypeAndStake = item.odds.filter(oddOtherTypeAndStake => this.findMatches(oddOtherTypeAndStake.player, odd.player))
+                                const maxPriceOdd = oddsOtherTypeAndStake.reduce((max, item) => item.price > max.price ? item : max, oddsOtherTypeAndStake[0])
 
-
-                        if (oddOtherTypeAndStake) {
-                            const probability = (1 / odd.price + 1 / oddOtherTypeAndStake.price)
-                            if (probability < 1 && odd.line == oddOtherTypeAndStake.line) {
-                                if (!this.surebets.find(item => item.stake1 === odd || item.stake2 === odd)) {
-                                    this.surebets.push({
-                                        type: category.caption,
-                                        winningPercentage: (1 - probability) * 100,
-                                        stake1: odd,
-                                        stake2: oddOtherTypeAndStake
-                                    })
+                                if (oddsOtherTypeAndStake.length) {
+                                    const probability = (1 / odd.price + 1 / maxPriceOdd.price)
+                                    if (probability < 1 && odd.line == maxPriceOdd.line) {
+                                        if (!this.surebets.find(item => item.stake1 === odd || item.stake2 === odd)) {
+                                            this.surebets.push({
+                                                type: category.caption,
+                                                winningPercentage: (1 - probability) * 100,
+                                                stake1: odd,
+                                                stake2: maxPriceOdd
+                                            })
+                                        }
+                                    }
                                 }
                             }
-                        } else {
-                            // console.log(player, otherStake.stake)
-                        }
+                        })
+
                     }
                 });
             }
@@ -56,20 +57,7 @@ export class SurebetCalculator {
         console.log(chalk.cyan(`Found ${this.surebets.length} surebets`));
     }
 
-    printVerbose(odd) {
-        console.log(
-            chalk.bold(
-                `${odd.caption} ${chalk.green(
-                    '±' + Math.round((odd.profit * 100) / 100) + '%'
-                )}`
-            )
-        );
-        for (let bet of [...odd.bets[0].items, ...odd.bets[1].items])
-            console.log(`${bet.player} @${bet.price.toFixed(2)} ${bet.code}`);
-        console.log('');
-    }
-
-    combineByCaption(odds) {
+    combineByCaption(odds: OddStake[]) {
         const combined = {};
 
         for (const stake of odds) {
@@ -95,6 +83,7 @@ export class SurebetCalculator {
     };
 
     normalize(text: string) {
+
         return text.normalize('NFKD')
             .trim()
             .toLowerCase()
@@ -103,5 +92,17 @@ export class SurebetCalculator {
             .replace(/_/g, ' ')
             .replace(/--+/g, ' ')
             .replace(/-$/g, '')
+    }
+
+    findMatches(betanoPlayer, novibetPlayer, threshold = 0.6) {
+        let match = false;
+        let matchRating = stringSimilarity.compareTwoStrings(this.normalize(betanoPlayer), this.normalize(novibetPlayer));
+
+        if (matchRating >= threshold) {
+            match = true
+        }
+
+
+        return match;
     }
 }

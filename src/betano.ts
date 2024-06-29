@@ -2,7 +2,7 @@ import { Bet, Odd } from "./types"
 import superagent from 'superagent'
 
 export async function getOddsBetano(URL: string) {
-
+    console.log(URL)
     const { body } = await superagent
         .get(URL)
         .set('Accept', 'application/json, text/plain, */*')
@@ -43,6 +43,14 @@ export async function getOddsBetano(URL: string) {
                     categoryIsValid = true
                     categoryTitle = "TOTALDESARMES"
                     break;
+                case "Assistências Mais/Menos":
+                    categoryIsValid = true
+                    categoryTitle = "TOTALDEASSISTENCIAS"
+                    break;
+                case "Defesas do Goleiro":
+                    categoryIsValid = true
+                    categoryTitle = "DEFESASDOGOLEIRO"
+                    break;
 
                 default:
                     break;
@@ -56,22 +64,24 @@ export async function getOddsBetano(URL: string) {
             for (const item of category.tableLayout.rows) {
                 for (const betItem of item.groupSelections) {
                     for (const selection of betItem.selections) {
+
                         let code = ""
-                        if (selection.name.includes("Mais de ")) {
+                        if (selection.name.includes("Mais de ") || selection.name.includes("+")) {
                             code = "O"
                         }
 
-                        if (selection.name.includes("Menos de ")) {
+                        if (selection.name.includes("Menos de ") || selection.name.includes("-")) {
                             code = "U"
                         }
 
                         const bet = {
-                            navigationUrl: "https://br.betano.com" + item.navigationUrl,
-                            caption: item.title,
-                            price: selection.price,
+                            stake: "BETANO",
                             player: item.title,
+                            price: selection.price,
                             line: betItem.handicap,
-                            code: code
+                            caption: item.title,
+                            code: code,
+                            navigationUrl: "https://br.betano.com" + item.navigationUrl,
                         }
 
                         bets.push(bet)
@@ -92,7 +102,7 @@ export async function getOddsBetano(URL: string) {
                 }
             }
 
-            const odd = {
+            const odd: Odd = {
                 caption: categoryTitle,
                 bets: [
                     {
