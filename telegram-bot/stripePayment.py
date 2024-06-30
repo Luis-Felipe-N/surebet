@@ -3,7 +3,7 @@ from decouple import config
 
 stripe.api_key = config('STRIPE_SECRET_KEY')
 
-def createCheckoutSession():
+def createCheckoutSession(telegramChatId):
     session = stripe.checkout.Session.create(
         payment_method_types=['card'],
         line_items=[{
@@ -19,5 +19,6 @@ def createCheckoutSession():
         mode='payment',
         success_url='http://127.0.0.1:5000/success',
         cancel_url='https://seusite.com/cancelamento',
+        client_reference_id=telegramChatId
     )
     return session.url
