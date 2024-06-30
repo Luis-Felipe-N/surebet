@@ -5,21 +5,20 @@ import { Odd, OddStake, Surebet } from './types';
 
 export class SurebetCalculator {
 
-    constructor(private odds: OddStake[]) { }
+    constructor(private odds: OddStake[], private lineup) { }
     public surebets: Surebet[] = []
 
-    extract() {
+    async extract() {
         if (!this.odds) throw 'No odds received.';
 
         const oddsCombine = this.combineByCaption(this.odds)
 
-        this.calculateInvestment(oddsCombine);
+        await this.calculateInvestment(oddsCombine);
 
         return this.surebets.sort((a, b) => b.winningPercentage - a.winningPercentage)
     }
 
-    calculateInvestment(oddsCombine) {
-
+    async calculateInvestment(oddsCombine) {
         for (let category of oddsCombine) {
             for (const bets of category.bets) {
 
@@ -28,19 +27,24 @@ export class SurebetCalculator {
 
                 bets.items.forEach(bet => {
                     for (const odd of bet.odds) {
-                        otherType.items.filter(item => {
+                        otherType.items.filter(async (item) => {
 
                             if (item.stake != bet.stake) {
-                                const oddsOtherTypeAndStake = item.odds.filter(oddOtherTypeAndStake => this.findMatches(oddOtherTypeAndStake.player, odd.player))
+                                const oddsOtherTypeAndStake = item.odds.filter(oddOtherTypeAndStake => this.matchPlayers(oddOtherTypeAndStake.player, odd.player))
                                 const maxPriceOdd = oddsOtherTypeAndStake.reduce((max, item) => item.price > max.price ? item : max, oddsOtherTypeAndStake[0])
 
                                 if (oddsOtherTypeAndStake.length) {
                                     const probability = (1 / odd.price + 1 / maxPriceOdd.price)
-                                    if (probability < 1 && odd.line == maxPriceOdd.line) {
-                                        if (!this.surebets.find(item => item.stake1 === odd || item.stake2 === odd)) {
+                                    const winningPercentage = (1 - probability) * 100
+
+                                    if (winningPercentage > 1 && odd.line == maxPriceOdd.line) {
+                                        const oddAlreadyExists = this.surebets.find(item => item.stake1 === odd || item.stake2 === odd)
+                                        const playerInLineup = this.checkPlayerInLineup(odd.player)
+
+                                        if (!oddAlreadyExists) {
                                             this.surebets.push({
                                                 type: category.caption,
-                                                winningPercentage: (1 - probability) * 100,
+                                                winningPercentage: winningPercentage,
                                                 stake1: odd,
                                                 stake2: maxPriceOdd
                                             })
@@ -83,7 +87,6 @@ export class SurebetCalculator {
     };
 
     normalize(text: string) {
-
         return text.normalize('NFKD')
             .trim()
             .toLowerCase()
@@ -94,9 +97,9 @@ export class SurebetCalculator {
             .replace(/-$/g, '')
     }
 
-    findMatches(betanoPlayer, novibetPlayer, threshold = 0.6) {
+    matchPlayers(player1: string, player2: string, threshold = 0.5) {
         let match = false;
-        let matchRating = stringSimilarity.compareTwoStrings(this.normalize(betanoPlayer), this.normalize(novibetPlayer));
+        let matchRating = stringSimilarity.compareTwoStrings(this.normalize(player1), this.normalize(player2));
 
         if (matchRating >= threshold) {
             match = true
@@ -104,5 +107,17 @@ export class SurebetCalculator {
 
 
         return match;
+    }
+
+    checkPlayerInLineup(player: string): boolean {
+        let inLineup = false;
+        let playersInLineup = [...this.lineup.home.players, this.lineup.away.players]
+        for (const playerInLineup of playersInLineup) {
+            if (playerInLineup.player) {
+                inLineup = this.matchPlayers(player, playerInLineup.player.name)
+            }
+        }
+
+        return inLineup
     }
 }

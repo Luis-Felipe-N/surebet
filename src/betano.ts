@@ -2,7 +2,7 @@ import { Bet, Odd } from "./types"
 import superagent from 'superagent'
 
 export async function getOddsBetano(URL: string) {
-    console.log(URL)
+
     const { body } = await superagent
         .get(URL)
         .set('Accept', 'application/json, text/plain, */*')

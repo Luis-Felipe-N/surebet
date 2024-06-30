@@ -2,7 +2,7 @@ import axios from 'axios'
 import { Bet, Odd, OddStake } from './types'
 
 export async function getOddsNovibet(URL: string): Promise<OddStake> {
-    console.log(URL)
+
     const response = await axios.get(URL)
     const items = response.data.marketCategories[0].items
     const odds: Odd[] = []
