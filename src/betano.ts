@@ -1,8 +1,8 @@
 import { Bet, Odd } from "./types"
 import superagent from 'superagent'
 
-export async function getOddsBetano(URL: string) {
-
+export async function getOddsBetano(id: string) {
+    const URL = `https://br.betano.com/api/odds/${id}/?bt=6&req=la,s,stnf,c,mb`
     const { body } = await superagent
         .get(URL)
         .set('Accept', 'application/json, text/plain, */*')
@@ -29,7 +29,7 @@ export async function getOddsBetano(URL: string) {
 
             let categoryIsValid = false
             let categoryTitle = ""
-
+            console.log(category.tableLayout.title)
             switch (category.tableLayout.title) {
                 case "Chutes no gol Mais/Menos":
                     categoryIsValid = true
@@ -67,11 +67,11 @@ export async function getOddsBetano(URL: string) {
 
                         let code = ""
                         if (selection.name.includes("Mais de ") || selection.name.includes("+")) {
-                            code = "O"
+                            code = "Over"
                         }
 
                         if (selection.name.includes("Menos de ") || selection.name.includes("-")) {
-                            code = "U"
+                            code = "Under"
                         }
 
                         const bet = {
@@ -93,11 +93,11 @@ export async function getOddsBetano(URL: string) {
 
             for (const bet of bets) {
 
-                if (bet.code === "U") {
+                if (bet.code === "Under") {
                     betsUnder.push(bet)
                 }
 
-                if (bet.code === "O") {
+                if (bet.code === "Over") {
                     betsOver.push(bet)
                 }
             }

@@ -1,4 +1,5 @@
 export interface Bet {
+    stake: string
     caption: string
     price: number
     code: string
@@ -23,6 +24,6 @@ export type OddStake = {
 export interface Surebet {
     type: string,
     winningPercentage: number,
-    stake1: Odd,
-    stake2: Odd
+    stake1: Bet,
+    stake2: Bet
 }

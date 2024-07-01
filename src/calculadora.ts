@@ -5,7 +5,7 @@ import { Odd, OddStake, Surebet } from './types';
 
 export class SurebetCalculator {
 
-    constructor(private odds: OddStake[], private lineup) { }
+    constructor(private odds: OddStake[]) { }
     public surebets: Surebet[] = []
 
     async extract() {
@@ -39,7 +39,7 @@ export class SurebetCalculator {
 
                                     if (winningPercentage > 1 && odd.line == maxPriceOdd.line) {
                                         const oddAlreadyExists = this.surebets.find(item => item.stake1 === odd || item.stake2 === odd)
-                                        const playerInLineup = this.checkPlayerInLineup(odd.player)
+                                        // const playerInLineup = this.checkPlayerInLineup(odd.player)
 
                                         if (!oddAlreadyExists) {
                                             this.surebets.push({
@@ -97,7 +97,7 @@ export class SurebetCalculator {
             .replace(/-$/g, '')
     }
 
-    matchPlayers(player1: string, player2: string, threshold = 0.5) {
+    matchPlayers(player1: string, player2: string, threshold = 0.6) {
         let match = false;
         let matchRating = stringSimilarity.compareTwoStrings(this.normalize(player1), this.normalize(player2));
 
@@ -109,15 +109,15 @@ export class SurebetCalculator {
         return match;
     }
 
-    checkPlayerInLineup(player: string): boolean {
-        let inLineup = false;
-        let playersInLineup = [...this.lineup.home.players, this.lineup.away.players]
-        for (const playerInLineup of playersInLineup) {
-            if (playerInLineup.player) {
-                inLineup = this.matchPlayers(player, playerInLineup.player.name)
-            }
-        }
+    // checkPlayerInLineup(player: string): boolean {
+    //     let inLineup = false;
+    //     let playersInLineup = [...this.lineup.home.players, this.lineup.away.players]
+    //     for (const playerInLineup of playersInLineup) {
+    //         if (playerInLineup.player) {
+    //             inLineup = this.matchPlayers(player, playerInLineup.player.name)
+    //         }
+    //     }
 
-        return inLineup
-    }
+    //     return inLineup
+    // }
 }

@@ -3,7 +3,8 @@
 import axios from 'axios'
 import { Bet, Odd, OddStake } from './types'
 
-export async function getOddsSuperbet(URL: string): Promise<OddStake> {
+export async function getOddsSuperbet(id: string): Promise<OddStake> {
+    const URL = `https://production-superbet-offer-basic.freetls.fastly.net/sb-basic/api/v2/en-BR/events/${id}?matchIds=${id}`
     const response = await axios.get(URL)
     const items = response.data.data[0].odds
 
@@ -33,6 +34,30 @@ export async function getOddsSuperbet(URL: string): Promise<OddStake> {
                     categoryIsValid = true
                     categoryTitle = "TOTALDEASSISTENCIAS"
                     break;
+                case 535:
+                    categoryIsValid = true
+                    categoryTitle = "TOTALDEGOLS"
+                    break;
+                case 544:
+                    categoryIsValid = true
+                    categoryTitle = "TOTALDEGOLS"
+                    break;
+                case 733:
+                    categoryIsValid = true
+                    categoryTitle = "TOTALDEESCANTEIO"
+                    break;
+                case 713:
+                    categoryIsValid = true
+                    categoryTitle = "TOTALDEESCANTEIO"
+                    break;
+                case 700:
+                    categoryIsValid = true
+                    categoryTitle = "TOTALDECARTOES"
+                    break;
+                case 708:
+                    categoryIsValid = true
+                    categoryTitle = "TOTALDECARTOES"
+                    break;
                 default:
                     break;
             }
@@ -40,15 +65,18 @@ export async function getOddsSuperbet(URL: string): Promise<OddStake> {
             if (!categoryIsValid) continue
 
             if (category) {
-
+                let player = category.specifiers.player_name ?? category.specifiers.player
+                if (!player) {
+                    player = category.marketName.split(" - ")[0]
+                }
 
                 const bet = {
                     stake: "SUPERBET",
-                    player: category.specifiers.player_name ?? category.specifiers.player,
+                    player: player,
                     price: category.price,
-                    line: parseFloat(category.specifiers.total) ?? 0.5,
+                    line: category.specifiers.total ? parseFloat(category.specifiers.total) : 0.5,
                     caption: category.name,
-                    code: "O",
+                    code: category.name.toLowerCase().includes("under") ? "Under" : "Over",
                 }
 
                 bets.push(bet)
@@ -59,11 +87,11 @@ export async function getOddsSuperbet(URL: string): Promise<OddStake> {
 
             for (const bet of bets) {
 
-                if (bet.code === "U") {
+                if (bet.code === "Under") {
                     betsUnder.push(bet)
                 }
 
-                if (bet.code === "O") {
+                if (bet.code === "Over") {
                     betsOver.push(bet)
                 }
             }
@@ -71,7 +99,9 @@ export async function getOddsSuperbet(URL: string): Promise<OddStake> {
             if (odds.filter(item => item.caption == categoryTitle).length) {
                 odds.map(category => {
                     if (category.caption == categoryTitle) {
-                        return category.bets[0].items.push(...betsOver)
+                        category.bets[1].items.push(...betsUnder)
+                        category.bets[0].items.push(...betsOver)
+                        return category
                     }
 
                     return category
@@ -92,12 +122,19 @@ export async function getOddsSuperbet(URL: string): Promise<OddStake> {
                     ]
                 }
 
+
                 odds.push(odd)
             }
 
         }
     }
 
+    console.log({
+        stake: "SUPERBET",
+        odds: odds
+    })
+    // console.log(odds[2].bets[0])
+    // console.log(odds[2].bets[1])
     return {
         stake: "SUPERBET",
         odds: odds
